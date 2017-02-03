@@ -11,4 +11,6 @@ Read and understand the script before use mine.
 
 I use the midi2command logic but added few functions for my own needs in music :
   - Can call internal method from a midi message, in my script we can control the camera module
-  - TODO : Can control a DAW object in progress under classes directory
+  - TODO : Can control a DAW object (in progress under classes directory)
+  - Under classes directory there is a base class for a Midi Device (DAW) and a class for the Edirol SD-90 that inherit the base class)
+  - TODO : Send reset sysex to SD-90
