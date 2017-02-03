@@ -1,0 +1,7 @@
+#!/bin/bash
+
+#python midi2command.py -v  -p 'SD-90 16:2' camera.config
+#upython midi2command.py -v -p 'SD-90 16:3' timeline.config
+#python midi2command.py -v  -p 'SD-90 16:2' rush.config
+#python midi2command.py -v -p 'SD-90 16:3' d4.config
+#python bankchange.py -v -c 1 -m 99 -l 6 -pc 126 -n 60 -vel 50 -d 3
