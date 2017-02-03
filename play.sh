@@ -2,7 +2,7 @@
 
 # Need SOX
 # Play filename on a specific audio harware
-# ADJUST AUDIODEV to your needs
+# ADJUST AUDIODEV for your needs
 
 filename=$1
 if [ -e $filename ]
