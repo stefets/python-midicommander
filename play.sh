@@ -7,5 +7,6 @@
 filename=$1
 if [ -e $filename ]
 then
+	kill -9 $(pgrep play) 2>/dev/null
 	AUDIODEV=hw:1,0 play $1
 fi
