@@ -11,4 +11,4 @@ Read and understand the script before use mine.
 
 I use the midi2command logic but added few functions for my own needs in music :
   - Can call internal method from a midi message, in my script we can control the camera module
-  - TODO : Can control a DAW object in progress here : https://github.com/pacificweb/python-daw
+  - TODO : Can control a DAW object in progress under classes directory
