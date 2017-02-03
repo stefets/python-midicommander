@@ -1,4 +1,4 @@
-# python-midi (futur name python-midicommander ?)
+# python-midicommander
 
 # Tested on a Raspberry Pi
 
