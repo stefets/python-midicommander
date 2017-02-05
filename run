@@ -1,8 +1,10 @@
 #!/bin/bash
 
+export AUDIODEV=hw:1,0	# Adjust to your needs
 ./midicommander.py -v  -p 3 $1
-#python midicommander.py -v  -p 'SD-90 16:2' camera.config
-#upython midicommander.py -v -p 'SD-90 16:3' timeline.config
-#python midicommander.py -v  -p 'SD-90 16:2' rush.config
-#python midicommander.py -v -p 'SD-90 16:3' d4.config
+
+# Added reset because my terminal goes fuck'top after the script
+reset
+
+# NOTES
 #python bankchange.py -v -c 1 -m 99 -l 6 -pc 126 -n 60 -vel 50 -d 3
