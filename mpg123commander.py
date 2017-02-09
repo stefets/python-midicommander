@@ -117,17 +117,16 @@ class MidiInputHandler(object):
             if args[0] == "internal":
                 log.info("Calling INTERNAL command: %s", cmdline)
                 self.do_internal_command(args, data1, data2)
+            elif args[0] == "mpg123" and self.player is not None:
+                self.player.stdin.write(' '.join(args[1:]) + '\n')
             else:
                 log.info("Calling EXTERNAL command: %s", cmdline)
-                self.do_external_command(args)
+                subprocess.Popen(args)
         except:
             log.exception("Error calling external/internal command.")
 
-    def do_external_command(self, args):
-        subprocess.Popen(args)
-
     def do_internal_command(self, args, data1, data2):
-        self.player.stdin.write(' '.join(args[1:]) + '\n')
+        print "TODO"
 
     def load_config(self, filename):
         if not exists(filename):
@@ -186,6 +185,7 @@ def main(args=None):
 
     player=subprocess.Popen(['mpg123', '-a', 'hw:1,0', '-q', '-R'], stdin=subprocess.PIPE)
     player.stdin.write('silence\n')
+    player.stdin.write('load online.mp3\n')
     midiin1.set_callback(MidiInputHandler(port_name, args.config, player))
 
     log.info("Entering main loop. Press Control-C to exit.")
