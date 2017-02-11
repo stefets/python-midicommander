@@ -2,6 +2,8 @@
 
 # Tested on a Raspberry Pi
 
+# Execute external process or control RPI camera or control a process that can get stdin input when specific MIDI message is received.
+
 Started from : https://github.com/SpotlightKid/python-rtmidi
 https://github.com/SpotlightKid/python-rtmidi/tree/master/examples/midi2command
 
