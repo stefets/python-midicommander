@@ -182,7 +182,7 @@ class Mpg123Player(object):
         print "Initializing mpg123 player in Remote Mode..."
         self._play=subprocess.Popen(['mpg123', '-a', 'hw:1,0', '-q', '-R'], stdin=subprocess.PIPE)
         self._play.stdin.write('silence\n')
-        self._play.stdin.write('load ./audio/online.mp3\n')
+        self._play.stdin.write('load /mnt/flash/root/online.mp3\n')
 
     def execute_command(self, value):
         self._play.stdin.write(' '.join(value[1:]) + '\n')
