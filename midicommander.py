@@ -4,35 +4,18 @@
 # Started from : https://github.com/SpotlightKid/python-rtmidi
 # https://github.com/SpotlightKid/python-rtmidi/tree/master/examples/midi2command
 #
-# midi2command.py
-#
-# Execute external commands when specific MIDI messages are received.
-
-# configuration (in YAML syntax)::
-#
-#   - name: My Backingtracks
-#     description: Play audio file with filename matching <data1>-playback.mp3
-#       when program change on channel 16 is received
-#     status: programchange
-#     channel: 16
-#     command: plaympeg %(data1)03i-playback.mp3
-#   - name: My Lead Sheets
-#     description: Open PDF with filename matching <data2>-sheet.pdf
-#       when control change 14 on channel 16 is received
-#     status: controllerchange
-#     channel: 16
-#     data: 14
-#     command: evince %(data2)03i-sheet.pdf
-#
-#
 
 import argparse
 import logging
 import shlex
 import subprocess
 import sys
+
 import time
-import picamera
+get_ms_time = lambda: int(round(time.time() * 1000))
+
+#import picamera
+
 import uuid
 import random
 
@@ -51,27 +34,30 @@ from rtmidi.midiutil import open_midiport
 from rtmidi.midiconstants import *
 
 log = logging.getLogger('midi2command')
+
 STATUS_MAP = {
     'noteon': NOTE_ON,
-    'noteoff': NOTE_OFF,
-    'programchange': PROGRAM_CHANGE,
-    'controllerchange': CONTROLLER_CHANGE,
-    'pitchbend': PITCH_BEND,
-    'polypressure': POLY_PRESSURE,
-    'channelpressure': CHANNEL_PRESSURE
 }
+#STATUS_MAP = {
+#    'noteon': NOTE_ON,
+#    'noteoff': NOTE_OFF,
+#    'programchange': PROGRAM_CHANGE,
+#    'controllerchange': CONTROLLER_CHANGE,
+#    'pitchbend': PITCH_BEND,
+#    'polypressure': POLY_PRESSURE,
+#    'channelpressure': CHANNEL_PRESSURE
+#}
 
 class InternalCommand(object):
     def __init__(self, args=None, data1=None, data2=None):
-    
+        #TODO    
         for arg in args:
             print arg
         print data1
         print data2
 
 class Command(object):
-    def __init__(self, name='', description='', status=0xB0, channel=None,
-            data=None, command=None):
+    def __init__(self, name='', description='', status=0xB0, channel=None, data=None, command=None):
         self.name = name
         self.description = description
         self.status = status
@@ -86,18 +72,19 @@ class Command(object):
             raise TypeError("Could not parse 'data' field.")
 
 class MidiInputHandler(object):
-    def __init__(self, port, config, camera):
+    def __init__(self, port, config, _camera, _player):
         self.port = port
-        self._wallclock = time.time()
         self.commands = dict()
         self.load_config(config)
-        if camera is not None:
-            self.camera = camera
+        if _player is not None:
+            self.player = _player
+        if _camera is not None:
+            self.camera = _camera
 
-    def __call__(self, event, data=None):
-        event, deltatime = event
-        self._wallclock += deltatime
-        log.debug("[%s] @%0.6f %r", self.port, self._wallclock, event)
+    def __call__(self, _event, data=None):
+        x=get_ms_time()
+        event, deltatime = _event
+        log.debug("[%s] %r", self.port, event)
 
         if event[0] < 0xF0:
             channel = (event[0] & 0xF) + 1
@@ -111,11 +98,10 @@ class MidiInputHandler(object):
 
         if num_bytes >= 2:
             data1 = event[1]
-        if num_bytes >= 3:
+        elif num_bytes >= 3:
             data2 = event[2]
 
         # Look for matching command definitions
-        # XXX: use memoize cache here
         if status in self.commands:
             for cmd in self.commands[status]:
                 if channel is not None and cmd.channel != channel:
@@ -126,8 +112,7 @@ class MidiInputHandler(object):
                     found = True
                 elif isinstance(cmd.data, int) and cmd.data == data1:
                     found = True
-                elif (isinstance(cmd.data, (list, tuple)) and
-                        cmd.data[0] == data1 and cmd.data[1] == data2):
+                elif (isinstance(cmd.data, (list, tuple)) and cmd.data[0] == data1 and cmd.data[1] == data2):
                     found = True
 
                 if found:
@@ -136,29 +121,31 @@ class MidiInputHandler(object):
                         data1=data1,
                         data2=data2,
                         status=status)
-                    self.do_command(cmdline, data1, data2)
+                    self.execute_command(cmdline, data1, data2)
+                    print get_ms_time() - x
             else:
                 return
 
-    def do_command(self, cmdline, data1, data2):
+    # Execute command set in config file
+    def execute_command(self, cmdline, data1, data2):
         try:
             args = shlex.split(cmdline)
-            if args[0] == "internal":
+            if args[0] == "mpg123" and self.player is not None:
+                self.player.execute_command(args)
+            elif args[0] == "internal":
                 log.info("Calling INTERNAL command: %s", cmdline)
-                self.do_internal_command(args, data1, data2)
+                self.execute_internal_command(args, data1, data2)
+            elif args[0] == "camera" and self.camera is not None:
+                self.camera.execute(data1, data2)
+                log.info("Calling CAMERA command: %s", cmdline)
             else:
                 log.info("Calling EXTERNAL command: %s", cmdline)
-                self.do_external_command(args)
+                subprocess.Popen(args)
         except:
-            log.exception("Error calling external/internal command.")
+            log.exception("Error calling methon execute_command.")
 
-    def do_external_command(self, args):
-        subprocess.Popen(args)
-
-    def do_internal_command(self, args, data1, data2):
-        #ic = InternalCommand(args, data1, data2)
-        if args[1] == "camera" and self.camera is not None:
-            self.camera.execute(data1, data2)
+    def execute_internal_command(self, args, data1, data2):
+        print "TODO"
 
     def load_config(self, filename):
         if not exists(filename):
@@ -189,6 +176,19 @@ class MidiInputHandler(object):
 
                 log.debug("Config: %s\n%s\n", cmd.name, cmd.description)
                 self.commands.setdefault(status, []).append(cmd)
+
+class Mpg123Player(object):
+    def __init__(self):
+        print "Initializing mpg123 player in Remote Mode..."
+        self._play=subprocess.Popen(['mpg123', '-a', 'hw:1,0', '-q', '-R'], stdin=subprocess.PIPE)
+        self._play.stdin.write('silence\n')
+        self._play.stdin.write('load ./audio/online.mp3\n')
+
+    def execute_command(self, value):
+        self._play.stdin.write(' '.join(value[1:]) + '\n')
+
+    def dispose(self):
+        self._play.terminate()
 
 class Camera(object):
     def __init__(self):
@@ -306,7 +306,7 @@ def main(args=None):
 #
 #    """
 
-    parser = argparse.ArgumentParser(description='midi2command')
+    parser = argparse.ArgumentParser(description='midicommander')
 
     parser.add_argument('-p',  '--port', dest='port', 
         help='MIDI input port name or number (default: open virtual input)')
@@ -314,8 +314,12 @@ def main(args=None):
     parser.add_argument('-v',  '--verbose', action="store_true",
         help='verbose output')
 
-    parser.add_argument('-d', '--device', dest="device",
-            help='device name : default = MidiDeviceBase')
+#   TODO
+#   parser.add_argument('-d', '--device', dest="device",
+#       help='device name : default = MidiDeviceBase')
+
+    parser.add_argument('-m', '--mpg123', action="store_true",
+        help='open mpg123 in Remote Mode (-R) and listen stdin for commands')
 
     parser.add_argument('-c', '--camera', action="store_true",
         help='enable camera')
@@ -333,16 +337,23 @@ def main(args=None):
     except (EOFError, KeyboardInterrupt):
         sys.exit()
 
+    # PLUGINS INITIALIZATION
+    play = None
+    cam = None
+
     if args.camera:
         log.debug("Starting RPI Camera Module...")
-        camera = Camera()
-    else:
-        camera = None
+        cam = Camera()
 
+    if args.mpg123:
+        log.debug("Starting mpg123 process in Remote Mode...")
+        play=Mpg123Player()
+
+    # MIDI CALLBACK AND PASS PLUGINS POINTER
     log.debug("Attaching MIDI input callback handler.")
-    midiin1.set_callback(MidiInputHandler(port_name, args.config, camera))
+    midiin1.set_callback(MidiInputHandler(port_name, args.config, cam, play))
 
-    log.info("Entering main loop. Press Control-C to exit.")
+    log.info("Entering main loop. Press Ctrl-C to exit")
     try:
         # just wait for keyboard interrupt in main thread
         while True:
@@ -350,11 +361,14 @@ def main(args=None):
     except KeyboardInterrupt:
         print('')
     finally:
+        log.info("Exiting main thread")
         midiin1.close_port()
         del midiin1
-        if camera is not None:
-            camera.dispose()
-            del camera
-
+        if cam is not None:
+            cam.dispose()
+            del cam
+        if play is not None:
+            play.dispose()
+            del play
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]) or 0)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python 
+#-*- coding: utf-8 -*-
 import argparse
 import logging
 import shlex
@@ -107,25 +108,29 @@ class MidiInputHandler(object):
                         data1=data1,
                         data2=data2,
                         status=status)
-                    self.do_command(cmdline, data1, data2)
+                    self.execute_command(cmdline, data1, data2)
             else:
                 return
 
-    def do_command(self, cmdline, data1, data2):
+    # Execute command set in config file
+    def execute_command(self, cmdline, data1, data2):
         try:
             args = shlex.split(cmdline)
-            if args[0] == "internal":
-                log.info("Calling INTERNAL command: %s", cmdline)
-                self.do_internal_command(args, data1, data2)
-            elif args[0] == "mpg123" and self.player is not None:
+            if args[0] == "mpg123" and self.player is not None:
                 self.player.stdin.write(' '.join(args[1:]) + '\n')
+            elif args[0] == "internal":
+                log.info("Calling INTERNAL command: %s", cmdline)
+                self.execute_internal_command(args, data1, data2)
+            elif args[0] == "camera"
+                self.camera.execute(data1, data2)
+                log.info("Calling CAMERA command: %s", cmdline)
             else:
                 log.info("Calling EXTERNAL command: %s", cmdline)
                 subprocess.Popen(args)
         except:
-            log.exception("Error calling external/internal command.")
+            log.exception("Error calling methon execute_command.")
 
-    def do_internal_command(self, args, data1, data2):
+    def execute_internal_command(self, args, data1, data2):
         print "TODO"
 
     def load_config(self, filename):

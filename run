@@ -1,10 +1,10 @@
 #!/bin/bash
 
-export AUDIODEV=hw:1,0	# Adjust to your needs
-./midicommander.py -v -p 3 $1
+#export AUDIODEV=hw:1,0	# Adjust to your needs
+./midicommander.py -m -v -p 3 $1
 
 # Added reset because my terminal goes fuck'top after the script
-reset
+#reset
 
 # NOTES
 #python bankchange.py -v -c 1 -m 99 -l 6 -pc 126 -n 60 -vel 50 -d 3
