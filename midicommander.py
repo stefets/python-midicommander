@@ -37,6 +37,7 @@ log = logging.getLogger('midi2command')
 
 STATUS_MAP = {
     'noteon': NOTE_ON,
+    'controllerchange': CONTROLLER_CHANGE
 }
 #STATUS_MAP = {
 #    'noteon': NOTE_ON,
@@ -81,9 +82,9 @@ class MidiInputHandler(object):
         if _camera is not None:
             self.camera = _camera
 
-    def __call__(self, _event, data=None):
+    def __call__(self, event, data=None):
         x=get_ms_time()
-        event, deltatime = _event
+        event, deltatime = event
         log.debug("[%s] %r", self.port, event)
 
         if event[0] < 0xF0:
@@ -98,7 +99,7 @@ class MidiInputHandler(object):
 
         if num_bytes >= 2:
             data1 = event[1]
-        elif num_bytes >= 3:
+        if num_bytes >= 3:
             data2 = event[2]
 
         # Look for matching command definitions

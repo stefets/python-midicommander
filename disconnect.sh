@@ -3,3 +3,4 @@
 # Disconnect all
 
 aconnect -x
+aconnect -l
