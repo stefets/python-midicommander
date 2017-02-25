@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from devices.generic import mdb
+from devices.midi.generic import mdb
 
 class TD20(mdb.MidiDeviceBase):
 

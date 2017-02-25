@@ -22,7 +22,7 @@ from rtmidi.midiconstants import *
 
 from devices import pi_camera
 from devices import mpg123
-from devices.roland import edirol
+from devices.midi.roland import edirol
 
 import time
 get_ms_time = lambda: int(round(time.time() * 1000))
