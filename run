@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #export AUDIODEV=hw:1,0	# Adjust to your needs
-./midicommander.py -m -v -p 3 $1
+./midicommander.py -v -p 3 $1
 
 # Added reset because my terminal goes fuck'top after the script
 #reset

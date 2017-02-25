@@ -37,6 +37,7 @@ log = logging.getLogger('midi2command')
 
 STATUS_MAP = {
     'noteon': NOTE_ON,
+    'noteoff': NOTE_OFF,
     'controllerchange': CONTROLLER_CHANGE
 }
 #STATUS_MAP = {
@@ -143,7 +144,7 @@ class MidiInputHandler(object):
                 log.info("Calling EXTERNAL command: %s", cmdline)
                 subprocess.Popen(args)
         except:
-            log.exception("Error calling methon execute_command.")
+            log.exception("Error calling method execute_command.")
 
     def execute_internal_command(self, args, data1, data2):
         print "TODO"
@@ -186,7 +187,9 @@ class Mpg123Player(object):
         #self._play.stdin.write('load /mnt/flash/root/online.mp3\n')
 
     def execute_command(self, value):
+        x=get_ms_time()
         self._play.stdin.write(' '.join(value[1:]) + '\n')
+        print get_ms_time() - x
 
     def dispose(self):
         self._play.terminate()
