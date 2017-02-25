@@ -33,6 +33,8 @@ import rtmidi
 from rtmidi.midiutil import open_midiport
 from rtmidi.midiconstants import *
 
+from devices.roland import edirol
+
 log = logging.getLogger('midi2command')
 
 STATUS_MAP = {
@@ -312,15 +314,8 @@ def main(args=None):
 
     parser = argparse.ArgumentParser(description='midicommander')
 
-    parser.add_argument('-p',  '--port', dest='port', 
-        help='MIDI input port name or number (default: open virtual input)')
-
     parser.add_argument('-v',  '--verbose', action="store_true",
         help='verbose output')
-
-#   TODO
-#   parser.add_argument('-d', '--device', dest="device",
-#       help='device name : default = MidiDeviceBase')
 
     parser.add_argument('-m', '--mpg123', action="store_true",
         help='open mpg123 in Remote Mode (-R) and listen stdin for commands')
@@ -337,10 +332,10 @@ def main(args=None):
 		level=logging.DEBUG if args.verbose else logging.WARNING)
 
     # DAW OBJECT
-    midimodule=SD90()
-
+    daw=edirol.SD90()
     try:
-        midiin1, port_name = open_midiport(args.port, use_virtual=False)
+        midiin1 = daw.open_midi_in_1()
+        midiin2 = daw.open_midi_in_2()
     except (EOFError, KeyboardInterrupt):
         sys.exit()
 
@@ -358,7 +353,8 @@ def main(args=None):
 
     # MIDI CALLBACK AND PASS PLUGINS POINTER
     log.debug("Attaching MIDI input callback handler.")
-    midiin1.set_callback(MidiInputHandler(port_name, args.config, cam, play))
+    midiin1.port.set_callback(MidiInputHandler(midiin1.port_name, args.config, cam, play))
+    midiin2.port.set_callback(MidiInputHandler(midiin2.port_name, args.config, cam, play))
 
     log.info("Entering main loop. Press Ctrl-C to exit")
     try:
@@ -369,8 +365,12 @@ def main(args=None):
         print('')
     finally:
         log.info("Exiting main thread")
-        midiin1.close_port()
+        midiin1.close()
+        midiin2.close()
+        daw.dispose()
+        del daw
         del midiin1
+        del midiin2
         if cam is not None:
             cam.dispose()
             del cam

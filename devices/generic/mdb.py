@@ -1,15 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# device.py
-# Stephane Gagnon
-# www.pacificweb.ca
-"""Represent a hardware DAW or a USB MIDI DEVICE """
 
-#import argparse
 import logging
 import sys
-#import threading
 import time
 
 import rtmidi
@@ -18,65 +11,49 @@ from rtmidi.midiconstants import *
 
 log = logging.getLogger("device")
 
+class MidiPort(object):
+    def __init__(self, _id=None, _kind=None):
+
+        self.port, self.port_name = open_midiport(_id, _kind)
+    
+    def close(self):
+        self.port.close_port()
+
 #Base class for a midi device
 class MidiDeviceBase(object):
     def __init__(self, name='Generic MIDI IN/OUT'):
 
         self.name = name
-
-        # Internal MIDI Through Port (Check and adjust for your system)
-        self.midi_through = self.midi_in_1 = self.midi_out_1 = 0
-
-        self.MIDI_THROUGH = self.open_midi_through()
+        self.midi_in_1 = self.midi_out_1 = 1
+        self.thru = self.open_midi_thru()
 		
     def reset(self):
         raise NotImplementedError("Abstract method 'reset()'.")
 
-    def open_midi_through(self):
-        port, port_name  = open_midiport(self.midi_through, "output")
-        return port
-        
+    def open_midi_thru(self):
+        return MidiPort(0, "output")
+
     def open_midi_in_1(self):
-        return open_midiport(self.midi_in_1, "input")
+        return MidiPort(self.midi_in_1, "input")
 
     def open_midi_out_1(self):
-        return open_midiport(self.midi_out_1, "output")
-
-    def close_port(self, port):
-        port.close_port()
-        del port
+        return MidiPort(self.midi_out_1, "output")
 
     def play_note(self, channel=None, note=None, velocity=100, duration=1):
-        Note(self.MIDI_THROUGH, channel, note, velocity, duration).play()
+        Note(self.thru.port, channel, note, velocity, duration).play()
 
     def all_note_off(self):
         for channel in range(1,16):
             self.message=[CONTROLLER_CHANGE + channel, 120, 0]
-            self.MIDI_THROUGH.send_message(self.message)
+            self.thru.port.send_message(self.message)
 
     def bank_select(self, channel, msb=None, lsb=None, program=None):
-        BankSelect(self.MIDI_THROUGH, channel, msb, lsb, program).send()
+        BankSelect(self.thru.port, channel, msb, lsb, program).send()
         time.sleep(0.1)  # give time for the MIDI device to process the bank change
 
     def dispose(self):
         log.debug("Dispose")
-        self.close_port(self.MIDI_THROUGH)
-
-#Model : Edirol SD-90
-class SD90(MidiDeviceBase):
-
-    def __init__(self):
-        super(SD90, self).__init__('Edirol SD-90 StudioCanvas')
-        self.midi_in_1 = self.midi_out_1 = 2 # must match aconnect
-        self.midi_in_2 = self.midi_out_2 = 3 # must match aconnect
-
-    def open_midi_in_2(self):
-        return open_midiport(self.midi_in_1, "input")
-
-    def open_midi_out_2(self):
-        return open_midiport(self.midi_out_2, "output")
-
-# Common
+        self.thru.close()
 
 # Note object
 class Note(object):
