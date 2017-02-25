@@ -336,6 +336,9 @@ def main(args=None):
     logging.basicConfig(format="%(name)s: %(levelname)s - %(message)s",
 		level=logging.DEBUG if args.verbose else logging.WARNING)
 
+    # DAW OBJECT
+    midimodule=SD90()
+
     try:
         midiin1, port_name = open_midiport(args.port, use_virtual=False)
     except (EOFError, KeyboardInterrupt):
