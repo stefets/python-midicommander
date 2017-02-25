@@ -14,7 +14,7 @@ class SD90(mdb.MidiDeviceBase):
 #[4] SD-90:SD-90 MIDI 2 20:3 *****
 
     def __init__(self):
-        super(SD90, self).__init__('Edirol SD-90 StudioCanvas')
+        super(SD90, self).__init__('Roland Edirol SD-90 StudioCanvas')
         self.midi_in_1 = self.midi_out_1 = 3
         self.midi_in_2 = self.midi_out_2 = 4
 
@@ -23,3 +23,8 @@ class SD90(mdb.MidiDeviceBase):
 
     def open_midi_out_2(self):
         return mdb.MidiPort(self.midi_out_2, "output")
+
+class TD20(mdb.MidiDeviceBase):
+
+    def __init__(self):
+        super(TD20, self).__init__('Roland TD-20')

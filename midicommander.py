@@ -76,7 +76,7 @@ class Command(object):
             raise TypeError("Could not parse 'data' field.")
 
 class MidiInputHandler(object):
-    def __init__(self, port, config, _camera, _player):
+    def __init__(self, port, config, _camera, _player, _daw):
         self.port = port
         self.commands = dict()
         self.load_config(config)
@@ -84,6 +84,8 @@ class MidiInputHandler(object):
             self.player = _player
         if _camera is not None:
             self.camera = _camera
+        if _daw is not None:
+            self.daw = _daw
 
     def __call__(self, event, data=None):
         x=get_ms_time()
@@ -134,7 +136,10 @@ class MidiInputHandler(object):
     def execute_command(self, cmdline, data1, data2):
         try:
             args = shlex.split(cmdline)
-            if args[0] == "mpg123" and self.player is not None:
+            if args[0] == "bankselect" and self.daw is not None:
+                print args
+                self.daw.bank_select(int(args[1]),int(args[2]),int(args[3]),int(args[4]))
+            elif args[0] == "mpg123" and self.player is not None:
                 self.player.execute_command(args)
             elif args[0] == "internal":
                 log.info("Calling INTERNAL command: %s", cmdline)
@@ -333,6 +338,8 @@ def main(args=None):
 
     # DAW OBJECT
     daw=edirol.SD90()
+    daw.bank_select(1,99,0,95)
+    daw.play_note(1, 50)
     try:
         midiin1 = daw.open_midi_in_1()
         midiin2 = daw.open_midi_in_2()
@@ -353,8 +360,8 @@ def main(args=None):
 
     # MIDI CALLBACK AND PASS PLUGINS POINTER
     log.debug("Attaching MIDI input callback handler.")
-    midiin1.port.set_callback(MidiInputHandler(midiin1.port_name, args.config, cam, play))
-    midiin2.port.set_callback(MidiInputHandler(midiin2.port_name, args.config, cam, play))
+    midiin1.port.set_callback(MidiInputHandler(midiin1.port_name, args.config, cam, play, daw))
+    midiin2.port.set_callback(MidiInputHandler(midiin2.port_name, args.config, cam, play, daw))
 
     log.info("Entering main loop. Press Ctrl-C to exit")
     try:

@@ -49,7 +49,6 @@ class MidiDeviceBase(object):
 
     def bank_select(self, channel, msb=None, lsb=None, program=None):
         BankSelect(self.thru.port, channel, msb, lsb, program).send()
-        time.sleep(0.1)  # give time for the MIDI device to process the bank change
 
     def dispose(self):
         log.debug("Dispose")
@@ -90,8 +89,8 @@ class BankSelect(object):
         self.cc32=[CONTROLLER_CHANGE+channel, BANK_SELECT_LSB,lsb]
         self.programchange=[PROGRAM_CHANGE+channel, program]
 
-    # Send a bank select
     def send(self):
         self.midiout.send_message(self.cc0)
         self.midiout.send_message(self.cc32)
         self.midiout.send_message(self.programchange)
+        time.sleep(0.1)  # give time for the MIDI device to process the bank change
