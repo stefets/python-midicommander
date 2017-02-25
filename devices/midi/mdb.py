@@ -4,6 +4,8 @@
 import logging
 import sys
 import time
+from random import uniform
+from random import randint
 
 import rtmidi
 from rtmidi.midiutil import open_midiport
@@ -49,6 +51,11 @@ class MidiDeviceBase(object):
 
     def bank_select(self, channel, msb=None, lsb=None, program=None):
         BankSelect(self.thru.port, channel, msb, lsb, program).send()
+
+    def random(self):
+        for p in range(1,10):
+            v=randint(20,100)
+            self.play_note(1,v,100,uniform(0.1,0.5))
 
     def dispose(self):
         log.debug("Dispose")

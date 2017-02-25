@@ -208,13 +208,16 @@ def main(args=None):
 
     # DAW OBJECT
     daw=edirol.SD90()
-    daw.bank_select(1,99,0,95)
-    daw.play_note(1, 50)
     try:
         midiin1 = daw.open_midi_in_1()
         midiin2 = daw.open_midi_in_2()
     except (EOFError, KeyboardInterrupt):
         sys.exit()
+
+    # MIDI CALLBACK AND PASS PLUGINS POINTER
+    log.debug("Attaching MIDI input callback handler.")
+    midiin1.port.set_callback(MidiInputHandler(midiin1.port_name, args.config, cam, play, daw))
+    midiin2.port.set_callback(MidiInputHandler(midiin2.port_name, args.config, cam, play, daw))
 
     # PLUGINS INITIALIZATION
     play = None
@@ -222,16 +225,11 @@ def main(args=None):
 
     if args.camera:
         log.debug("Starting RPI Camera Module...")
-        cam = Camera()
+        cam = pi_camera.Camera()
 
     if args.mpg123:
         log.debug("Starting mpg123 process in Remote Mode...")
         play=mpg123.Player()
-
-    # MIDI CALLBACK AND PASS PLUGINS POINTER
-    log.debug("Attaching MIDI input callback handler.")
-    midiin1.port.set_callback(MidiInputHandler(midiin1.port_name, args.config, cam, play, daw))
-    midiin2.port.set_callback(MidiInputHandler(midiin2.port_name, args.config, cam, play, daw))
 
     log.info("Entering main loop. Press Ctrl-C to exit")
     try:
