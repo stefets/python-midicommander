@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 #-*- coding: utf-8 -*-
 #
 # Started from : https://github.com/SpotlightKid/python-rtmidi
@@ -52,11 +52,7 @@ STATUS_MAP = {
 
 class InternalCommand(object):
     def __init__(self, args=None, data1=None, data2=None):
-        #TODO    
-        for arg in args:
-            print arg
-        print data1
-        print data2
+        self.value=args
 
 class Command(object):
     def __init__(self, name='', description='', status=0xB0, channel=None, data=None, command=None):
@@ -115,7 +111,7 @@ class MidiInputHandler(object):
                 data2=data2,
                 status=status)
             self.execute_command(cmdline, data1, data2)
-            print get_ms_time() - x
+            print (get_ms_time() - x)
 
     @lru_cache()
     def lookup_command(self, status, channel, data1, data2):
