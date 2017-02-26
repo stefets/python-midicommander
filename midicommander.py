@@ -31,7 +31,7 @@ try:
     from functools import lru_cache
 except ImportError:
     # Python < 3.2
-	lru_cache = lambda func: func
+	lru_cache = lambda : lambda func: func
 
 log = logging.getLogger('midi2command')
 
@@ -85,10 +85,9 @@ class MidiInputHandler(object):
         if _daw is not None:
             self.daw = _daw
 
-    def __call__(self, event, data=None):
+    def __call__(self, _event, data=None):
         x=get_ms_time()
-        event, deltatime = event
-        log.debug("[%s] %r", self.port, event)
+        event, deltatime = _event
 
         if event[0] < 0xF0:
             channel = (event[0] & 0xF) + 1
@@ -106,7 +105,9 @@ class MidiInputHandler(object):
             data2 = event[2]
 
         # Look for matching command definitions
+        print "Before lookup : " + str(get_ms_time() - x)
         cmd = self.lookup_command(status, channel, data1, data2)
+        print "After lookup : " + str(get_ms_time() - x)
 
         if cmd:
             cmdline = cmd.command % dict(
@@ -117,8 +118,10 @@ class MidiInputHandler(object):
             self.execute_command(cmdline, data1, data2)
             print get_ms_time() - x
 
-    #NOT WORKING 
-    #@lru_cache()
+        # For optimisation, display info after execution
+        #log.debug("[%s] %r", self.port, event)
+
+    @lru_cache()
     def lookup_command(self, status, channel, data1, data2):
         for cmd in self.commands.get(status, []):
             if channel is not None and cmd.channel != channel:
