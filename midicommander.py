@@ -117,7 +117,8 @@ class MidiInputHandler(object):
             self.execute_command(cmdline, data1, data2)
             print get_ms_time() - x
 
-    @lru_cache()
+    #NOT WORKING 
+    #@lru_cache()
     def lookup_command(self, status, channel, data1, data2):
         for cmd in self.commands.get(status, []):
             if channel is not None and cmd.channel != channel:
