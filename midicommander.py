@@ -106,38 +106,38 @@ class MidiInputHandler(object):
             data2 = event[2]
 
         # Look for matching command definitions
-        if status in self.commands:
-            for cmd in self.commands[status]:
-                if channel is not None and cmd.channel != channel:
-                    continue
+        cmd = self.lookup_command(status, channel, data1, data2)
 
-                found = False
-                if num_bytes == 1 or cmd.data is None:
-                    found = True
-                elif isinstance(cmd.data, int) and cmd.data == data1:
-                    found = True
-                elif (isinstance(cmd.data, (list, tuple)) and cmd.data[0] == data1 and cmd.data[1] == data2):
-                    found = True
+        if cmd:
+            cmdline = cmd.command % dict(
+                channel=channel,
+                data1=data1,
+                data2=data2,
+                status=status)
+            self.execute_command(cmdline, data1, data2)
+            print get_ms_time() - x
 
-                if found:
-                    cmdline = cmd.command % dict(
-                        channel=channel,
-                        data1=data1,
-                        data2=data2,
-                        status=status)
-                    self.execute_command(cmdline, data1, data2)
-                    print get_ms_time() - x
-            else:
-                return
+    @lru_cache()
+    def lookup_command(self, status, channel, data1, data2):
+        for cmd in self.commands.get(status, []):
+            if channel is not None and cmd.channel != channel:
+                continue
+
+            if (data1 is None and data2 is None) or cmd.data is None:
+                return cmd
+            elif isinstance(cmd.data, int) and cmd.data == data1:
+                return cmd
+            elif (isinstance(cmd.data, (list, tuple)) and cmd.data[0] == data1 and cmd.data[1] == data2):
+                return cmd
 
     # Execute command set in config file
     def execute_command(self, cmdline, data1, data2):
         try:
             args = shlex.split(cmdline)
+            log.info("Calling command: %s", cmdline)
             if args[0] == "external":
                 subprocess.Popen(args[1:])
             elif args[0] == "internal":
-                log.info("Calling INTERNAL command: %s", cmdline)
                 self.execute_internal_command(args, data1, data2)
             elif args[0] == "mpg123" and self.player is not None:
                 self.player.execute_command(args)
@@ -145,9 +145,7 @@ class MidiInputHandler(object):
                 self.daw.bank_select(int(args[1]),int(args[2]),int(args[3]),int(args[4]))
             elif args[0] == "camera" and self.camera is not None:
                 self.camera.execute(data1, data2)
-                log.info("Calling CAMERA command: %s", cmdline)
             else:
-                log.info("Calling EXTERNAL command: %s", cmdline)
                 subprocess.Popen(args)
         except:
             log.exception("Error calling method execute_command.")
@@ -206,8 +204,21 @@ def main(args=None):
     logging.basicConfig(format="%(name)s: %(levelname)s - %(message)s",
 		level=logging.DEBUG if args.verbose else logging.WARNING)
 
-    # DAW OBJECT
+    # PLUGINS 
+    play = None
+    cam = None
+
+    if args.camera:
+        log.info("Starting RPI Camera Module...")
+        cam = pi_camera.Camera()
+
+    if args.mpg123:
+        log.info("Starting mpg123 process in Remote Mode...")
+        play=mpg123.Player()
+
+    # MIDI 
     daw=edirol.SD90()
+    log.info(daw.name)
     try:
         midiin1 = daw.open_midi_in_1()
         midiin2 = daw.open_midi_in_2()
@@ -215,21 +226,9 @@ def main(args=None):
         sys.exit()
 
     # MIDI CALLBACK AND PASS PLUGINS POINTER
-    log.debug("Attaching MIDI input callback handler.")
+    log.info("Attaching MIDI input callback handler.")
     midiin1.port.set_callback(MidiInputHandler(midiin1.port_name, args.config, cam, play, daw))
     midiin2.port.set_callback(MidiInputHandler(midiin2.port_name, args.config, cam, play, daw))
-
-    # PLUGINS INITIALIZATION
-    play = None
-    cam = None
-
-    if args.camera:
-        log.debug("Starting RPI Camera Module...")
-        cam = pi_camera.Camera()
-
-    if args.mpg123:
-        log.debug("Starting mpg123 process in Remote Mode...")
-        play=mpg123.Player()
 
     log.info("Entering main loop. Press Ctrl-C to exit")
     try:
