@@ -1,4 +1,4 @@
 #!/bin/bash
 
-./midicommander.py -v -m $1
+./midicommander.py -v $1
 #python bankchange.py -v -c 1 -m 99 -l 6 -pc 126 -n 60 -vel 50 -d 3

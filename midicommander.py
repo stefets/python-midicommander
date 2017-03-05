@@ -131,7 +131,7 @@ class MidiInputHandler(object):
             if args[0] == "external":
                 subprocess.Popen(args[1:])
             elif args[0] == "daw" and self.daw is not None:
-                self.daw.execute(args[1:])
+                self.daw.execute(args)
             elif args[0] == "mpg123" and self.player is not None:
                 self.player.execute_command(args)
             elif args[0] == "camera" and self.camera is not None:
