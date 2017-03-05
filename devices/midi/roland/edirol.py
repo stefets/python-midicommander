@@ -22,6 +22,10 @@ class SD90(mdb.MidiDeviceBase):
         #pyglet.options['audio'] = ('pulse', 'silent')
         #self.media_player = pyglet.media.Player()
 
+    def reset(self):
+        self.all_note_off()
+        self.send_sysex("./devices/midi/roland/sd90.syx")
+
     def open_midi_in_2(self):
         return mdb.MidiPort(self.midi_in_2, "input")
 

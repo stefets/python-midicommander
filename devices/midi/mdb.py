@@ -4,6 +4,7 @@
 import logging
 import sys
 import time
+from os.path import basename
 from random import uniform
 from random import randint
 
@@ -12,6 +13,9 @@ from rtmidi.midiutil import open_midiport
 from rtmidi.midiconstants import *
 
 log = logging.getLogger("device")
+
+SYSTEM_EXCLUSIVE = b'\xF0'
+END_OF_EXCLUSIVE = b'\xF7'
 
 class MidiPort(object):
     def __init__(self, _id=None, _kind=None):
@@ -29,8 +33,41 @@ class MidiDeviceBase(object):
         self.midi_in_1 = self.midi_out_1 = 1
         self.thru = self.open_midi_thru()
 		
-    def reset(self):
-        raise NotImplementedError("Abstract method 'reset()'.")
+    def send_sysex(self, filename, delay=50):
+
+        bn = basename(filename)
+        with open(filename, 'rb') as sysex_file:
+
+            data = sysex_file.read()
+
+            if data.startswith(SYSTEM_EXCLUSIVE):
+
+                sox = 0
+                i = 0
+
+                while sox >= 0:
+                    sox = data.find(SYSTEM_EXCLUSIVE, sox)
+    
+                    if sox >= 0:
+                        eox = data.find(END_OF_EXCLUSIVE, sox)
+    
+                        if eox >= 0:
+                            sysex_msg = data[sox:eox + 1]
+                            # Python 2: convert data into list of integers
+                            if isinstance(sysex_msg, str):
+                                sysex_msg = [ord(c) for c in sysex_msg]
+    
+                            log.info("Sending '%s' message #%03i...", bn, i)
+                            self.thru.port.send_message(sysex_msg)
+                            time.sleep(0.001 * delay)
+    
+                            i += 1
+                        else:
+                            break
+    
+                        sox = eox + 1
+            else:
+                log.warning("File '%s' does not start with a sysex message.", bn)
 
     def open_midi_thru(self):
         return MidiPort(0, "output")
@@ -42,7 +79,8 @@ class MidiDeviceBase(object):
         return MidiPort(self.midi_out_1, "output")
 
     def play_note(self, channel=None, note=None, velocity=100, duration=1):
-        Note(self.thru.port, channel, note, velocity, duration).play()
+        note=Note(self.thru.port, channel, note, velocity, duration)
+        note.play()
 
     def all_note_off(self):
         for channel in range(1,16):
@@ -50,7 +88,8 @@ class MidiDeviceBase(object):
             self.thru.port.send_message(self.message)
 
     def bank_select(self, channel, msb=None, lsb=None, program=None):
-        BankSelect(self.thru.port, channel, msb, lsb, program).send()
+        bs=BankSelect(self.thru.port, channel, msb, lsb, program)
+        bs.send()
 
     def random(self):
         for p in range(1,10):

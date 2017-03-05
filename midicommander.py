@@ -207,6 +207,7 @@ def main(args=None):
     # MIDI 
     sd=edirol.SD90()
     log.info(sd.name)
+    sd.reset()
     try:
         midiin1 = sd.open_midi_in_1()
         midiin2 = sd.open_midi_in_2()
