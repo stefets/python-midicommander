@@ -31,7 +31,7 @@ class MidiDeviceBase(object):
 
         self.name = name
         self.midi_in_1 = self.midi_out_1 = 1
-        self.thru = self.open_midi_thru()
+        self.midi_thru = self.open_midi_thru()
 		
     def send_sysex(self, filename, delay=50):
 
@@ -58,7 +58,7 @@ class MidiDeviceBase(object):
                                 sysex_msg = [ord(c) for c in sysex_msg]
     
                             log.info("Sending '%s' message #%03i...", bn, i)
-                            self.thru.port.send_message(sysex_msg)
+                            self.midi_thru.port.send_message(sysex_msg)
                             time.sleep(0.001 * delay)
     
                             i += 1
@@ -79,16 +79,16 @@ class MidiDeviceBase(object):
         return MidiPort(self.midi_out_1, "output")
 
     def play_note(self, channel=None, note=None, velocity=100, duration=1):
-        note=Note(self.thru.port, channel, note, velocity, duration)
+        note=Note(self.midi_thru.port, channel, note, velocity, duration)
         note.play()
 
     def all_note_off(self):
         for channel in range(1,16):
             self.message=[CONTROLLER_CHANGE + channel, 120, 0]
-            self.thru.port.send_message(self.message)
+            self.midi_thru.port.send_message(self.message)
 
     def bank_select(self, channel, msb=None, lsb=None, program=None):
-        bs=BankSelect(self.thru.port, channel, msb, lsb, program)
+        bs=BankSelect(self.midi_thru.port, channel, msb, lsb, program)
         bs.send()
 
     def random(self):
@@ -98,7 +98,7 @@ class MidiDeviceBase(object):
 
     def dispose(self):
         log.debug("Dispose")
-        self.thru.close()
+        self.midi_thru.close()
 
 # Note object
 class Note(object):
