@@ -31,7 +31,7 @@ try:
     from functools import lru_cache
 except ImportError:
     # Python < 3.2
-	lru_cache = lambda func: func
+	lru_cache = lambda : lambda func: func
 
 log = logging.getLogger('midi2command')
 
@@ -49,14 +49,6 @@ STATUS_MAP = {
 #    'polypressure': POLY_PRESSURE,
 #    'channelpressure': CHANNEL_PRESSURE
 #}
-
-class InternalCommand(object):
-    def __init__(self, args=None, data1=None, data2=None):
-        #TODO    
-        for arg in args:
-            print arg
-        print data1
-        print data2
 
 class Command(object):
     def __init__(self, name='', description='', status=0xB0, channel=None, data=None, command=None):
@@ -85,10 +77,9 @@ class MidiInputHandler(object):
         if _daw is not None:
             self.daw = _daw
 
-    def __call__(self, event, data=None):
+    def __call__(self, _event, data=None):
         x=get_ms_time()
-        event, deltatime = event
-        log.debug("[%s] %r", self.port, event)
+        event, deltatime = _event
 
         if event[0] < 0xF0:
             channel = (event[0] & 0xF) + 1
@@ -115,7 +106,10 @@ class MidiInputHandler(object):
                 data2=data2,
                 status=status)
             self.execute_command(cmdline, data1, data2)
-            print get_ms_time() - x
+            log.info("Executing [%s]", cmdline)
+
+        # For optimisation, display info after execution
+        log.info("[%s] %r", self.port, event)
 
     @lru_cache()
     def lookup_command(self, status, channel, data1, data2):
@@ -134,24 +128,18 @@ class MidiInputHandler(object):
     def execute_command(self, cmdline, data1, data2):
         try:
             args = shlex.split(cmdline)
-            log.info("Calling command: %s", cmdline)
             if args[0] == "external":
                 subprocess.Popen(args[1:])
-            elif args[0] == "internal":
-                self.execute_internal_command(args, data1, data2)
+            elif args[0] == "daw" and self.daw is not None:
+                self.daw.execute(args)
             elif args[0] == "mpg123" and self.player is not None:
                 self.player.execute_command(args)
-            elif args[0] == "bankselect" and self.daw is not None:
-                self.daw.bank_select(int(args[1]),int(args[2]),int(args[3]),int(args[4]))
             elif args[0] == "camera" and self.camera is not None:
                 self.camera.execute(data1, data2)
             else:
                 subprocess.Popen(args)
         except:
             log.exception("Error calling method execute_command.")
-
-    def execute_internal_command(self, args, data1, data2):
-        return
 
     def load_config(self, filename):
         if not exists(filename):
@@ -217,18 +205,19 @@ def main(args=None):
         play=mpg123.Player()
 
     # MIDI 
-    daw=edirol.SD90()
-    log.info(daw.name)
+    sd=edirol.SD90()
+    log.info(sd.name)
+    sd.reset()
     try:
-        midiin1 = daw.open_midi_in_1()
-        midiin2 = daw.open_midi_in_2()
+        midiin1 = sd.open_midi_in_1()
+        midiin2 = sd.open_midi_in_2()
     except (EOFError, KeyboardInterrupt):
         sys.exit()
 
     # MIDI CALLBACK AND PASS PLUGINS POINTER
     log.info("Attaching MIDI input callback handler.")
-    midiin1.port.set_callback(MidiInputHandler(midiin1.port_name, args.config, cam, play, daw))
-    midiin2.port.set_callback(MidiInputHandler(midiin2.port_name, args.config, cam, play, daw))
+    midiin1.port.set_callback(MidiInputHandler(midiin1.port_name, args.config, cam, play, sd))
+    midiin2.port.set_callback(MidiInputHandler(midiin2.port_name, args.config, cam, play, sd))
 
     log.info("Entering main loop. Press Ctrl-C to exit")
     try:
@@ -241,8 +230,8 @@ def main(args=None):
         log.info("Exiting main thread")
         midiin1.close()
         midiin2.close()
-        daw.dispose()
-        del daw
+        sd.dispose()
+        del sd
         del midiin1
         del midiin2
         if cam is not None:
